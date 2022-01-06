@@ -367,6 +367,37 @@ fn main() -> Result<(), Error> {
 }
 
 
+fn save_profile(path: &std::path::Path, data: &LaunchOptions) {
+    if let Err(e) = std::fs::write(
+        path,
+        format!("{}\n{}\n{}\n{}\n",
+                data.auth_player_name,
+                data.auth_uuid,
+                data.version,
+                data.use_latest_version)
+    ) {
+        println!("Error writing file: {}", e);
+    }
+}
+
+
+fn load_profile(path: &std::path::Path, data: &mut LaunchOptions) {
+    match std::fs::read_to_string(path) {
+        Ok(s) => {
+            let mut lines = s.lines();
+            data.auth_player_name = lines.next().unwrap_or("").to_owned();
+            data.auth_uuid = lines.next().unwrap_or("").to_owned();
+            data.version = lines.next().unwrap_or("").to_owned();
+            data.use_latest_version = lines.next().unwrap_or("") == "true";
+        }
+        Err(e) => {
+            println!("Error opening file: {}", e);
+        }
+    }
+}
+
+
+
 impl AppDelegate<LaunchOptions> for Delegate {
     fn command(
         &mut self,
@@ -377,31 +408,11 @@ impl AppDelegate<LaunchOptions> for Delegate {
         _env: &Env,
     ) -> Handled {
         if let Some(file_info) = cmd.get(commands::SAVE_FILE_AS) {
-            if let Err(e) = std::fs::write(
-                file_info.path(),
-                format!("{}\n{}\n{}\n{}\n",
-                        data.auth_player_name,
-                        data.auth_uuid,
-                        data.version,
-                        data.use_latest_version)
-            ) {
-                println!("Error writing file: {}", e);
-            }
+            save_profile(file_info.path(), &data);
             return Handled::Yes;
         }
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
-            match std::fs::read_to_string(file_info.path()) {
-                Ok(s) => {
-                    let mut lines = s.lines();
-                    data.auth_player_name = lines.next().unwrap_or("").to_owned();
-                    data.auth_uuid = lines.next().unwrap_or("").to_owned();
-                    data.version = lines.next().unwrap_or("").to_owned();
-                    data.use_latest_version = lines.next().unwrap_or("") == "true";
-                }
-                Err(e) => {
-                    println!("Error opening file: {}", e);
-                }
-            }
+            load_profile(file_info.path(), data);
             return Handled::Yes;
         }
         Handled::No
