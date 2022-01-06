@@ -292,11 +292,11 @@ fn build_root_widget() -> impl Widget<LaunchOptions> {
 
     //let advanced_options = Flex::column();
 
-    let json = FileSpec::new("JSON file", &["json"]);
+    let txt = FileSpec::new("Text file", &["txt"]);
     let save_profile_options = FileDialogOptions::new()
-        .allowed_types(vec![json])
-        .default_type(json)
-        .default_name(String::from("ninjalauncher_profile.json"))
+        .allowed_types(vec![txt])
+        .default_type(txt)
+        .default_name(String::from("ninjalauncher_profile.txt"))
         .name_label("Store profile")
         .title("Choose where to store your profile")
         .button_text("Save");
@@ -306,9 +306,9 @@ fn build_root_widget() -> impl Widget<LaunchOptions> {
     });
 
     let load_profile_options = FileDialogOptions::new()
-        .allowed_types(vec![json])
-        .default_type(json)
-        .default_name(String::from("ninjalauncher_profile.json"))
+        .allowed_types(vec![txt])
+        .default_type(txt)
+        .default_name(String::from("ninjalauncher_profile.txt"))
         .name_label("Load profile")
         .title("Choose a profile to load")
         .button_text("Load");
@@ -377,7 +377,14 @@ impl AppDelegate<LaunchOptions> for Delegate {
         _env: &Env,
     ) -> Handled {
         if let Some(file_info) = cmd.get(commands::SAVE_FILE_AS) {
-            if let Err(e) = std::fs::write(file_info.path(), &data.auth_uuid) {
+            if let Err(e) = std::fs::write(
+                file_info.path(),
+                format!("{}\n{}\n{}\n{}\n",
+                        data.auth_player_name,
+                        data.auth_uuid,
+                        data.version,
+                        data.use_latest_version)
+            ) {
                 println!("Error writing file: {}", e);
             }
             return Handled::Yes;
@@ -385,8 +392,11 @@ impl AppDelegate<LaunchOptions> for Delegate {
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
             match std::fs::read_to_string(file_info.path()) {
                 Ok(s) => {
-                    let first_line = s.lines().next().unwrap_or("");
-                    data.auth_uuid = first_line.to_owned();
+                    let mut lines = s.lines();
+                    data.auth_player_name = lines.next().unwrap_or("").to_owned();
+                    data.auth_uuid = lines.next().unwrap_or("").to_owned();
+                    data.version = lines.next().unwrap_or("").to_owned();
+                    data.use_latest_version = lines.next().unwrap_or("") == "true";
                 }
                 Err(e) => {
                     println!("Error opening file: {}", e);
