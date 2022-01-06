@@ -301,9 +301,26 @@ fn build_root_widget() -> impl Widget<LaunchOptions> {
         .title("Choose where to store your profile")
         .button_text("Save");
 
-    let save_profile_button = Button::new("Save").on_click(move |ctx, _: &mut LaunchOptions, _| {
+    let save_profile_button = Button::new("Save Profile").on_click(move |ctx, _: &mut LaunchOptions, _| {
         ctx.submit_command(druid::commands::SHOW_SAVE_PANEL.with(save_profile_options.clone()))
     });
+
+    let load_profile_options = FileDialogOptions::new()
+        .allowed_types(vec![json])
+        .default_type(json)
+        .default_name(String::from("ninjalauncher_profile.json"))
+        .name_label("Load profile")
+        .title("Choose a profile to load")
+        .button_text("Load");
+
+    let load_profile_button = Button::new("Load Profile").on_click(move |ctx, _: &mut LaunchOptions, _| {
+        ctx.submit_command(druid::commands::SHOW_OPEN_PANEL.with(load_profile_options.clone()))
+    });
+
+    let profile_buttons = Flex::row()
+        .with_child(save_profile_button)
+        .with_child(load_profile_button);
+
 
     let main_col = Flex::column()
         .with_child(title_label
@@ -314,7 +331,7 @@ fn build_root_widget() -> impl Widget<LaunchOptions> {
         //.with_spacer(10.0)
         //.with_flex_child(advanced_options, 1.0)
         .with_spacer(3.0)
-        .with_child(save_profile_button);
+        .with_child(profile_buttons);
 
 
     //let switch = LensWrap::new(Checkbox::new("bool value"), LaunchOptions::bool_value);
